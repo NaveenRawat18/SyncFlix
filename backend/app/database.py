@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize engine and session maker
 try:
-    engine = create_engine(settings.DATABASE_URL, echo=False)
+    engine = create_engine(settings.DATABASE_URL, echo=False, connect_args={"ssl_context": True})
     SessionLocal = sessionmaker(engine, expire_on_commit=False)
 except Exception as e:
     logger.warning(f"Failed to initialize database engine: {e}. Database operations may not be available.")
