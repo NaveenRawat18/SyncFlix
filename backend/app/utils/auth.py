@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.config import settings
 from app.database import get_db
@@ -36,28 +36,28 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 
-async def get_current_user(
+def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> User:
     payload = decode_token(credentials.credentials)
     user_id: str = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
 
-async def get_optional_user(
+def get_optional_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Optional[User]:
     if not credentials:
         return None
     try:
-        return await get_current_user(credentials, db)
+        return get_current_user(credentials, db)
     except HTTPException:
         return None
